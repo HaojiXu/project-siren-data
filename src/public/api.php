@@ -39,16 +39,16 @@ $app->get('/api/mirror/{name}', function (Request $request, Response $response) 
 
 # Get All Titles on site: Database Macro Search
 $app->get('/api/titles', function(Request $request, Response $response){
-    $sql = "SELECT * FROM titles";
+    $sql = "SELECT * FROM siren_titles_list";
     try{
         // Get DB Object
         $db = new db();
         // Connect
         $db = $db->connect();
         $stmt = $db->query($sql);
-        $customers = $stmt->fetchAll(PDO::FETCH_OBJ);
+        $titled = $stmt->fetchAll(PDO::FETCH_OBJ);
         $db = null;
-        echo json_encode($customers);
+        echo json_encode($titles);
     } catch(PDOException $e){
         echo '{"error": {"text": '.$e->getMessage().'}';
     }

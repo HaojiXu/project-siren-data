@@ -6,11 +6,19 @@
 $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
 
-# Edit the following lines to connect to a local database
-$config['db']['host']   = "localhost";
-$config['db']['user']   = "user";
-$config['db']['pass']   = "password";
-$config['db']['dbname'] = "siren";
-
+class db{
+        // Properties
+        private $dbhost = '127.0.0.1';
+        private $dbuser = 'root';
+        private $dbpass = '123456';
+        private $dbname = 'siren';
+        // Connect
+        public function connect(){
+            $mysql_connect_str = "mysql:host=$this->dbhost;dbname=$this->dbname";
+            $dbConnection = new PDO($mysql_connect_str, $this->dbuser, $this->dbpass);
+            $dbConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            return $dbConnection;
+        }
+}
 
 ?>
