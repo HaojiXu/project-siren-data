@@ -1,4 +1,4 @@
-<?php
+<?php header('Access-Control-Allow-Origin: *');
 # API Sample: GET http://your-site.com/api/updated
 
 use \Psr\Http\Message\ServerRequestInterface as Request;
