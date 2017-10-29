@@ -10,13 +10,26 @@ This project utilizes [Slim Framework](https://www.slimframework.com/docs/start/
 # Install Slim Framework & Other Libraries (See a list below)
 composer install
 
-# Change the config.php to reflect information of your own database
+# Change the config.php to settings of your MySQL database.
 nano config.php
 
 # You're good to go!
 ```
 
+You might need to import the Siren datastructure into your database. Using phpmyadmin, you can import the .sql file into your existing MySQL database.
+
 # API Sample
+`https://yourhost/api/api.php/all_chapters`
+Get all articles, unsorted
+
+`https://yourhost/api/api.php/all_works`
+Get all works, unsorted
+
+`https://yourhost/api/api.php/chapter/{id}`
+Get a specific chapter
+
+`https://yourhost/api/api.php/work/{id}`
+Get a specific work
 
 # Acknowledgement
 This project could not be made without the help of:
