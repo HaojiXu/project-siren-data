@@ -1,4 +1,6 @@
 <?php header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: text/html; charset=utf-8');
 # API Sample: GET http://your-site.com/api/updated
 
 use \Psr\Http\Message\ServerRequestInterface as Request;
@@ -12,7 +14,7 @@ $app = new \Slim\App(["settings" => $config]);
 # Logging Support
 $container['logger'] = function($c) {
     $logger = new \Monolog\Logger('my_logger');
-    $file_handler = new \Monolog\Handler\StreamHandler("../logs/app.log");
+    $file_handler = new \Monolog\Handler\StreamHandler("app.log");
     $logger->pushHandler($file_handler);
     return $logger;
 };
@@ -30,7 +32,7 @@ $container['db'] = function ($c) {
 # TESTFLIGHT: http://myhost/api/api.php/mirror/{name}
 $app->get('/mirror/{name}', function (Request $request, Response $response) {
     $name = $request->getAttribute('name');
-    $response->getBody()->write("Hello, $name");
+    $response->getBody()->write("我是你爸爸");
 
     return $response;
 });
@@ -45,10 +47,11 @@ $app->get('/all_chapters', function(Request $request, Response $response){
         $db = new db();
         // Connect
         $db = $db->connect();
+        $db -> exec("set names utf8mb4");
         $stmt = $db->query($sql);
         $return = $stmt->fetchAll(PDO::FETCH_OBJ);
         $db = null;
-        echo json_encode($return);
+        echo json_encode($return, JSON_UNESCAPED_UNICODE);
     } catch(PDOException $e){
         echo '{"error": {"text": '.$e->getMessage().'}';
     }
@@ -62,10 +65,11 @@ $app->get('/all_works', function(Request $request, Response $response){
         $db = new db();
         // Connect
         $db = $db->connect();
+        $db -> exec("set names utf8mb4");
         $stmt = $db->query($sql);
         $return = $stmt->fetchAll(PDO::FETCH_OBJ);
         $db = null;
-        echo json_encode($return);
+        echo json_encode($return, JSON_UNESCAPED_UNICODE);
     } catch(PDOException $e){
         echo '{"error": {"text": '.$e->getMessage().'}';
     }
@@ -73,16 +77,20 @@ $app->get('/all_works', function(Request $request, Response $response){
 
 # Get a specific article
 $app->get('/chapter/{id}', function(Request $request, Response $response){
+    $id = $request->getAttribute('id');
     $sql = "SELECT * FROM siren.siren_posts WHERE id = $id";
     try{
         // Get DB Object
         $db = new db();
         // Connect
         $db = $db->connect();
+        $db -> exec("set names utf8mb4");
         $stmt = $db->query($sql);
         $return = $stmt->fetchAll(PDO::FETCH_OBJ);
+        //$return = "hello"
         $db = null;
-        echo json_encode($return);
+        echo json_encode($return, JSON_UNESCAPED_UNICODE);
+        //echo var_dump($return);
     } catch(PDOException $e){
         echo '{"error": {"text": '.$e->getMessage().'}';
     }
@@ -90,20 +98,67 @@ $app->get('/chapter/{id}', function(Request $request, Response $response){
 
 # Get a specific work
 $app->get('/work/{id}', function(Request $request, Response $response){
-    $sql = "SELECT * FROM siren.siren_terms" WHERE id = $id;
+    $id = $request->getAttribute('id');
+    $sql = "SELECT id, AuthorID, Name, CoverImg, Tags, TimeCreated FROM siren.siren_terms WHERE id = $id";
     try{
         // Get DB Object
         $db = new db();
         // Connect
         $db = $db->connect();
+        $db -> exec("set names utf8mb4");
         $stmt = $db->query($sql);
         $return = $stmt->fetchAll(PDO::FETCH_OBJ);
         $db = null;
-        echo json_encode($return);
+        echo json_encode($return, JSON_UNESCAPED_UNICODE);
     } catch(PDOException $e){
         echo '{"error": {"text": '.$e->getMessage().'}';
     }
 });
 
-$app->run();
+# Create a chapter in a selected work -- POST
+$app->post('/create_new_chapter', function(Request $request, Response $response){
+    $data = $request->getParsedBody();
 
+    $token = $data['token'];
+    $termid = $data['termid'];
+    $title = $data['title'];
+    $content = $data['content'];
+    $sql_check = "SELECT AccessToken FROM siren.siren_terms WHERE id = :id";
+    $sql_insert = "INSERT INTO siren.siren_posts (`id`, `TermID`, `Title`, `TimeUpdated`,
+      `Content`) VALUES (NULL, :termid, :title, NOW(), :content);";
+    try{
+        // Get DB Object
+        $db = new db();
+        // Connect
+        $db = $db->connect();
+        $db -> exec("set names utf8mb4");
+
+        $stmt = $db->prepare($sql_check);
+        $stmt->execute(array(':id' => $termid));
+
+        $return = $stmt->fetchAll(PDO::FETCH_OBJ)[0]->AccessToken;
+        if ($return == $token) {
+
+          $stmt_insert = $db->prepare($sql_insert);
+          $stmt_insert->execute(array(
+            ':termid' => $termid,
+            ':title' => $title,
+            ':content' => $content
+          ));
+
+
+          # Success
+          echo '{"success"}';
+        } else {
+          # Not Authenticated
+          echo '{"error": {"text": "Error Authenticating"}';
+        }
+
+        $db = null;
+
+    } catch(Exception $e){
+        echo '{"error": {"text": '.$e->getMessage().'}';
+    }
+});
+
+$app->run();
