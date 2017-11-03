@@ -29,6 +29,16 @@ $container['db'] = function ($c) {
     return $pdo;
 };
 
+###### HELPER FUNCTIONS ######
+function get_words($text, $length = 200, $dots = true) {
+    $text = trim(preg_replace('#[\s\n\r\t]{2,}#', ' ', $text));
+    $text_temp = $text;
+    while (substr($text, $length, 1) != " ") { $length++; if ($length > strlen($text)) { break; } }
+    $text = substr($text, 0, $length);
+    return $text . ( ( $dots == true && $text != '' && strlen($text_temp) > $length ) ? '...' : '');
+}
+###### ###### ###### ######
+
 # TESTFLIGHT: http://myhost/api/api.php/mirror/{name}
 $app->get('/mirror/{name}', function (Request $request, Response $response) {
     $name = $request->getAttribute('name');
@@ -50,6 +60,28 @@ $app->get('/all_chapters', function(Request $request, Response $response){
         $db -> exec("set names utf8mb4");
         $stmt = $db->query($sql);
         $return = $stmt->fetchAll(PDO::FETCH_OBJ);
+        $db = null;
+        echo json_encode($return, JSON_UNESCAPED_UNICODE);
+    } catch(PDOException $e){
+        echo '{"error": {"text": '.$e->getMessage().'}';
+    }
+});
+
+# Get all articles with summary, used in the homapage Feed card
+$app->get('/all_chapters_summary', function(Request $request, Response $response){
+    $sql = "SELECT a.id, a.TermID, a.Title, a.Content, a.TimeUpdated, b.AuthorID, b.CoverImg FROM siren.siren_posts a, siren.siren_terms b WHERE a.TermID = b.id";
+    try{
+        // Get DB Object
+        $db = new db();
+        // Connect
+        $db = $db->connect();
+        $db -> exec("set names utf8mb4");
+        $stmt = $db->query($sql);
+        $return = $stmt->fetchAll(PDO::FETCH_OBJ);
+        foreach ($return as &$article_obj) {
+          $article_obj->Content = strip_tags($article_obj->Content);
+          $article_obj->Content = get_words($article_obj->Content);
+        }
         $db = null;
         echo json_encode($return, JSON_UNESCAPED_UNICODE);
     } catch(PDOException $e){
